@@ -1,0 +1,32 @@
+{% extends 'core/base.html' %}
+{% block title %}Email Template Info{% endblock %}
+{% block content %}
+<div class="container">
+  <h1 class="mt-4">Email Template Details</h1>
+  <div class="card mb-4">
+    <div class="card-header">
+      <h2>{{ template.name }}</h2>
+    </div>
+    <div class="card-body">
+      <p><strong>Subject:</strong> {{ template.subject }}</p>
+      <p><strong>Envelope Sender:</strong> {{ template.envelope_sender }}</p>
+      <p><strong>Add Tracking Image:</strong> {{ template.add_tracking_image|yesno:"Yes,No" }}</p>
+      <p><strong>Difficulty:</strong> {{ template.difficulty }}</p>
+      <p><strong>Modified Date:</strong> {{ template.modified_date|date:"M d, Y H:i" }}</p>
+      <hr>
+      <h4>Plain Text Content</h4>
+      <p>{{ template.plain_content|linebreaks }}</p>
+      <hr>
+      <h4>HTML Content</h4>
+      <div>{{ template.html_content|safe }}</div>
+      {% if template.attachment %} 
+        <hr>
+        <h4>Attachment</h4>
+        <p>{{ template.attachment }}</p>
+      {% endif %}
+    </div>
+  </div>
+  <a href="{% url 'core:email_template_edit' template.pk %}" class="btn btn-warning">Edit Template</a>
+  <a href="{% url 'core:email_templates' %}" class="btn btn-secondary">Back to List</a>
+</div>
+{% endblock %}

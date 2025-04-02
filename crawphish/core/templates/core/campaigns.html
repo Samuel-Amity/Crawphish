@@ -1,0 +1,137 @@
+{% extends 'core/base.html' %}
+{% block title %}Campaigns{% endblock %}
+{% block content %}
+<div class="container">
+    <h1>Campaigns</h1>
+
+    <a href="{% url 'core:campaign_create' %}" class="btn btn-success mb-3" data-bs-toggle="tooltip" title="Create a new phishing campaign">+ New Campaign</a>
+
+    <!-- Active Campaigns -->
+    {% if active_campaigns %}
+        <h2>Active Campaigns</h2>
+        <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Name</th>
+                        <th>Launch Date</th>
+                        <th>End Date</th>
+                        <th>Frequency</th>
+                        <th>Recipients</th>
+                        <th>Status</th>
+                        <th>Templates</th>
+                        <th>Tracking</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for campaign in active_campaigns %}
+                        <tr>
+                            <td>{{ campaign.name }}</td>
+                            <td>{{ campaign.launch_date|date:"M d, Y H:i" }}</td>
+                            <td>{{ campaign.end_date|date:"M d, Y H:i"|default:"-" }}</td>
+                            <td>{{ campaign.get_frequency_display }}</td>
+                            <td>
+                                {% if campaign.send_to_all_users %}
+                                    All Users
+                                {% else %}
+                                    {{ campaign.groups.count }} Group{{ campaign.groups.count|pluralize }}
+                                {% endif %}
+                            </td>
+                            <td><span class="badge bg-success">{{ campaign.get_status_display }}</span></td>
+                            <td>{{ campaign.email_templates.count }}</td>
+                            <td>{{ campaign.track_activity_duration }} days</td>
+                            <td>
+                                <div class="d-flex gap-1">
+                                    <a href="{% url 'core:campaign_detail' campaign.pk %}" class="btn btn-info btn-sm" data-bs-toggle="tooltip" title="View details">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <a href="{% url 'core:campaign_edit' campaign.pk %}" class="btn btn-primary btn-sm" data-bs-toggle="tooltip" title="Edit">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <form action="{% url 'core:campaign_delete' campaign.pk %}" method="post">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-danger btn-sm" data-bs-toggle="tooltip" title="Delete" onclick="return confirm('Delete {{ campaign.name }}?')">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                    <a href="{% url 'core:campaign_copy' campaign.pk %}" class="btn btn-secondary btn-sm" data-bs-toggle="tooltip" title="Duplicate">
+                                        <i class="bi bi-files"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="alert alert-info">No active campaigns found.</div>
+    {% endif %}
+
+    <!-- Archived Campaigns -->
+    {% if archived_campaigns %}
+        <h2 class="mt-4">Archived Campaigns</h2>
+        <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle">
+                <thead class="table-secondary">
+                    <tr>
+                        <th>Name</th>
+                        <th>Launch Date</th>
+                        <th>End Date</th>
+                        <th>Frequency</th>
+                        <th>Recipients</th>
+                        <th>Status</th>
+                        <th>Results</th>
+                        <th>Duration</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for campaign in archived_campaigns %}
+                        <tr>
+                            <td>{{ campaign.name }}</td>
+                            <td>{{ campaign.launch_date|date:"M d, Y H:i" }}</td>
+                            <td>{{ campaign.end_date|date:"M d, Y H:i"|default:"-" }}</td>
+                            <td>{{ campaign.get_frequency_display }}</td>
+                            <td>
+                                {% if campaign.send_to_all_users %}
+                                    All Users
+                                {% else %}
+                                    {{ campaign.groups.count }} Group{{ campaign.groups.count|pluralize }}
+                                {% endif %}
+                            </td>
+                            <td><span class="badge bg-secondary">{{ campaign.get_status_display }}</span></td>
+                            <td>
+                                {% if campaign.click_rate %}{{ campaign.click_rate }}% Clicks{% endif %}
+                                {% if campaign.submit_rate %}{{ campaign.submit_rate }}% Submits{% endif %}
+                            </td>
+                            <td>{{ campaign.track_activity_duration }} days</td>
+                            <td>
+                                <div class="d-flex gap-1">
+                                    <a href="{% url 'core:campaign_detail' campaign.pk %}" class="btn btn-info btn-sm">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <a href="{% url 'core:campaign_copy' campaign.pk %}" class="btn btn-secondary btn-sm">
+                                        <i class="bi bi-files"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="alert alert-info mt-4">No archived campaigns found.</div>
+    {% endif %}
+</div>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+        });
+    </script>
+{% endblock %}

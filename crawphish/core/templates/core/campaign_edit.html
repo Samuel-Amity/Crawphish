@@ -1,0 +1,187 @@
+
+{% extends 'core/base.html' %}
+{% block title %}Edit Campaign - {{ campaign.name }}{% endblock %}
+{% block content %}
+    <h1>Edit Campaign: {{ campaign.name }}</h1>
+    
+    {% if messages %}
+    <div class="alert alert-danger">
+        {% for message in messages %}
+            <p>{{ message }}</p>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
+    {% if form.errors %}
+        <div class="alert alert-danger">
+            <ul>
+                {% for field, errors in form.errors.items %}
+                    <li>{{ field }}: {{ errors|join:", " }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+    
+    <form method="post" action="{% url 'core:campaign_edit' campaign.pk %}">
+        {% csrf_token %}
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label for="id_name" class="form-label" data-bs-toggle="tooltip" title="{{ form.name.field.help_text }}">Name</label>
+                {{ form.name }}
+                {% if form.name.errors %}
+                    <div class="text-danger">{{ form.name.errors }}</div>
+                {% endif %}
+            </div>
+            <div class="col-md-6 mb-3">
+                <label for="id_launch_date" class="form-label" data-bs-toggle="tooltip" title="{{ form.launch_date.field.help_text }}">Start Date & Time</label>
+                {{ form.launch_date }}
+                {% if form.launch_date.errors %}
+                    <div class="text-danger">{{ form.launch_date.errors }}</div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label for="id_frequency" class="form-label" data-bs-toggle="tooltip" title="{{ form.frequency.field.help_text }}">Frequency</label>
+                {{ form.frequency }}
+                {% if form.frequency.errors %}
+                    <div class="text-danger">{{ form.frequency.errors }}</div>
+                {% endif %}
+            </div>
+            <div class="col-md-6 mb-3">
+                <label for="id_sending_period_type" class="form-label" data-bs-toggle="tooltip" title="{{ form.sending_period_type.field.help_text }}">Sending Period</label>
+                {{ form.sending_period_type }}
+                {% if form.sending_period_type.errors %}
+                    <div class="text-danger">{{ form.sending_period_type.errors }}</div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label for="id_sending_period_days" class="form-label" data-bs-toggle="tooltip" title="{{ form.sending_period_days.field.help_text }}">Sending Period Days</label>
+                {{ form.sending_period_days }}
+                {% if form.sending_period_days.errors %}
+                    <div class="text-danger">{{ form.sending_period_days.errors }}</div>
+                {% endif %}
+            </div>
+            <div class="col-md-6 mb-3">
+                <label for="id_track_activity_duration" class="form-label" data-bs-toggle="tooltip" title="{{ form.track_activity_duration.field.help_text }}">Track Activity Duration (Days)</label>
+                {{ form.track_activity_duration }}
+                {% if form.track_activity_duration.errors %}
+                    <div class="text-danger">{{ form.track_activity_duration.errors }}</div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="mb-3 form-check">
+            <input type="checkbox" class="form-check-input" id="id_send_to_all_users" name="send_to_all_users" {% if form.send_to_all_users.value %}checked{% endif %}>
+            <label class="form-check-label" for="id_send_to_all_users" data-bs-toggle="tooltip" title="{{ form.send_to_all_users.field.help_text }}">Send to All Users</label>
+            {% if form.send_to_all_users.errors %}
+                <div class="text-danger">{{ form.send_to_all_users.errors }}</div>
+            {% endif %}
+        </div>
+        
+        <div class="mb-3">
+            <label for="id_groups" class="form-label" data-bs-toggle="tooltip" title="Select groups to send the campaign to if not sending to all users">Groups</label>
+            {{ form.groups }}
+            {% if form.groups.errors %}
+                <div class="text-danger">{{ form.groups.errors }}</div>
+            {% endif %}
+        </div>
+        
+        <div class="mb-3">
+            <label for="id_email_templates" class="form-label" data-bs-toggle="tooltip" title="{{ form.email_templates.field.help_text }}">Email Templates</label>
+            {{ form.email_templates }}
+            {% if form.email_templates.errors %}
+                <div class="text-danger">{{ form.email_templates.errors }}</div>
+            {% endif %}
+        </div>
+        
+        <div class="mb-3">
+            <label for="id_landing_pages" class="form-label" data-bs-toggle="tooltip" title="{{ form.landing_pages.field.help_text }}">Landing Pages</label>
+            {{ form.landing_pages }}
+            {% if form.landing_pages.errors %}
+                <div class="text-danger">{{ form.landing_pages.errors }}</div>
+            {% endif %}
+        </div>
+        
+        <div class="mb-3">
+            <label for="id_sending_profile" class="form-label" data-bs-toggle="tooltip" title="Select the SMTP profile for sending emails">Sending Profile</label>
+            {{ form.sending_profile }}
+            {% if form.sending_profile.errors %}
+                <div class="text-danger">{{ form.sending_profile.errors }}</div>
+            {% endif %}
+        </div>
+        
+        <div class="mb-3">
+            <label for="id_url" class="form-label" data-bs-toggle="tooltip" title="The base URL for campaign links">URL</label>
+            {{ form.url }}
+            {% if form.url.errors %}
+                <div class="text-danger">{{ form.url.errors }}</div>
+            {% endif %}
+        </div>
+        
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label for="id_clicker_groups" class="form-label" data-bs-toggle="tooltip" title="{{ form.clicker_groups.field.help_text }}">Clicker Groups</label>
+                {{ form.clicker_groups }}
+                {% if form.clicker_groups.errors %}
+                    <div class="text-danger">{{ form.clicker_groups.errors }}</div>
+                {% endif %}
+            </div>
+            <div class="col-md-6 mb-3">
+                <label for="id_submitter_groups" class="form-label" data-bs-toggle="tooltip" title="{{ form.submitter_groups.field.help_text }}">Submitter Groups</label>
+                {{ form.submitter_groups }}
+                {% if form.submitter_groups.errors %}
+                    <div class="text-danger">{{ form.submitter_groups.errors }}</div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="mb-3 form-check">
+            <input type="checkbox" class="form-check-input" id="id_track_replied_emails" name="track_replied_emails" {% if form.track_replied_emails.value %}checked{% endif %}>
+            <label class="form-check-label" for="id_track_replied_emails" data-bs-toggle="tooltip" title="{{ form.track_replied_emails.field.help_text }}">Track Replied Emails</label>
+            {% if form.track_replied_emails.errors %}
+                <div class="text-danger">{{ form.track_replied_emails.errors }}</div>
+            {% endif %}
+        </div>
+        
+        <div class="mb-3 form-check">
+            <input type="checkbox" class="form-check-input" id="id_send_report_after_end" name="send_report_after_end" {% if form.send_report_after_end.value %}checked{% endif %}>
+            <label class="form-check-label" for="id_send_report_after_end" data-bs-toggle="tooltip" title="{{ form.send_report_after_end.field.help_text }}">Send Report After End</label>
+            {% if form.send_report_after_end.errors %}
+                <div class="text-danger">{{ form.send_report_after_end.errors }}</div>
+            {% endif %}
+        </div>
+        
+        <div class="mb-3 form-check">
+            <input type="checkbox" class="form-check-input" id="id_hide_from_dashboard" name="hide_from_dashboard" {% if form.hide_from_dashboard.value %}checked{% endif %}>
+            <label class="form-check-label" for="id_hide_from_dashboard" data-bs-toggle="tooltip" title="{{ form.hide_from_dashboard.field.help_text }}">Hide from Dashboard</label>
+            {% if form.hide_from_dashboard.errors %}
+                <div class="text-danger">{{ form.hide_from_dashboard.errors }}</div>
+            {% endif %}
+        </div>
+        
+        <div class="mb-3">
+            <label for="id_status" class="form-label" data-bs-toggle="tooltip" title="{{ form.status.field.help_text }}">Status</label>
+            {{ form.status }}
+            {% if form.status.errors %}
+                <div class="text-danger">{{ form.status.errors }}</div>
+            {% endif %}
+        </div>
+        
+        <button type="submit" class="btn btn-primary" data-bs-toggle="tooltip" title="Save changes to this campaign">Save Changes</button>
+        <a href="{% url 'core:campaign_detail' campaign.pk %}" class="btn btn-secondary" data-bs-toggle="tooltip" title="Return to campaign details">Cancel</a>
+    </form>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+        });
+    </script>
+{% endblock %}

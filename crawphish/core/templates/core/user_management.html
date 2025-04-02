@@ -1,0 +1,197 @@
+<!-- templates/core/user_management.html -->
+{% extends 'core/base.html' %}
+{% block title %}User Management{% endblock %}
+{% block content %}
+    <h1>User Management</h1>
+
+    <!-- Create User Button -->
+    <button type="button" class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#createUserModal">
+        + New User
+    </button>
+
+    <!-- Users Table -->
+    {% if users %}
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Username</th>
+                    <th>Email</th>
+                    <th>Full Name</th>
+                    <th>Position</th>
+                    <th>Role</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                    <tr data-user-id="{{ user.pk }}">
+                        <td>{{ user.username }}</td>
+                        <td>{{ user.email }}</td>
+                        <td>{{ user.first_name }} {{ user.last_name }}</td>
+                        <td>{{ user.position|default:"N/A" }}</td>
+                        <td>{% if user.is_superuser %}Admin{% else %}User{% endif %}</td>
+                        <td>
+                            <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editUserModal{{ user.pk }}">Edit</button>
+                            <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteUserModal{{ user.pk }}">Delete</button>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <div class="alert alert-info" role="alert">
+            No users available. Let's create one!
+        </div>
+    {% endif %}
+
+    <!-- Create User Modal -->
+    <div class="modal fade" id="createUserModal" tabindex="-1" aria-labelledby="createUserModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="createUserModalLabel">Create User</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="createUserForm" method="post" action="{% url 'core:user_create' %}">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="username" class="form-label">Username</label>
+                            <input type="text" class="form-control" id="username" name="username" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="email" name="email" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="first_name" class="form-label">First Name</label>
+                            <input type="text" class="form-control" id="first_name" name="first_name">
+                        </div>
+                        <div class="mb-3">
+                            <label for="last_name" class="form-label">Last Name</label>
+                            <input type="text" class="form-control" id="last_name" name="last_name">
+                        </div>
+                        <div class="mb-3">
+                            <label for="position" class="form-label">Position</label>
+                            <input type="text" class="form-control" id="position" name="position">
+                        </div>
+                        <div class="mb-3">
+                            <label for="is_superuser" class="form-label">Admin Role</label>
+                            <select class="form-control" id="is_superuser" name="is_superuser">
+                                <option value="False">User</option>
+                                <option value="True">Admin</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Save</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit User Modals -->
+    {% for user in users %}
+        <div class="modal fade" id="editUserModal{{ user.pk }}" tabindex="-1" aria-labelledby="editUserModalLabel{{ user.pk }}" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="editUserModalLabel{{ user.pk }}">Edit User: {{ user.username }}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="editUserForm{{ user.pk }}" method="post" action="{% url 'core:user_edit' user.pk %}">
+                            {% csrf_token %}
+                            <div class="mb-3">
+                                <label for="username_{{ user.pk }}" class="form-label">Username</label>
+                                <input type="text" class="form-control" id="username_{{ user.pk }}" name="username" value="{{ user.username }}" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="email_{{ user.pk }}" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="email_{{ user.pk }}" name="email" value="{{ user.email }}" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="first_name_{{ user.pk }}" class="form-label">First Name</label>
+                                <input type="text" class="form-control" id="first_name_{{ user.pk }}" name="first_name" value="{{ user.first_name }}">
+                            </div>
+                            <div class="mb-3">
+                                <label for="last_name_{{ user.pk }}" class="form-label">Last Name</label>
+                                <input type="text" class="form-control" id="last_name_{{ user.pk }}" name="last_name" value="{{ user.last_name }}">
+                            </div>
+                            <div class="mb-3">
+                                <label for="position_{{ user.pk }}" class="form-label">Position</label>
+                                <input type="text" class="form-control" id="position_{{ user.pk }}" name="position" value="{{ user.position|default_if_none:'' }}">
+                            </div>
+                            <div class="mb-3">
+                                <label for="is_superuser_{{ user.pk }}" class="form-label">Admin Role</label>
+                                <select class="form-control" id="is_superuser_{{ user.pk }}" name="is_superuser">
+                                    <option value="False" {% if not user.is_superuser %}selected{% endif %}>User</option>
+                                    <option value="True" {% if user.is_superuser %}selected{% endif %}>Admin</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Save</button>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+
+    <!-- Delete User Modals -->
+    {% for user in users %}
+        <div class="modal fade" id="deleteUserModal{{ user.pk }}" tabindex="-1" aria-labelledby="deleteUserModalLabel{{ user.pk }}" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="deleteUserModalLabel{{ user.pk }}">Delete User: {{ user.username }}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Are you sure you want to delete "{{ user.username }}"?</p>
+                        <form id="deleteUserForm{{ user.pk }}" method="post" action="{% url 'core:user_delete' user.pk %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger">Yes, Delete</button>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+
+    <script>
+        // Handle form submissions via AJAX
+        document.querySelectorAll('form[id^="createUserForm"], form[id^="editUserForm"], form[id^="deleteUserForm"]').forEach(form => {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const formData = new FormData(this);
+                fetch(this.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRFToken': form.querySelector('[name=csrfmiddlewaretoken]').value
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const modal = this.closest('.modal');
+                        const bsModal = bootstrap.Modal.getInstance(modal);
+                        bsModal.hide();
+                        alert(data.message || 'Operation completed successfully!');
+                        window.location.href = data.redirect_url;
+                    } else {
+                        console.error('Form errors:', data.errors);
+                        alert(data.message || 'There was an error with your submission. Please check the form.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred. Please try again.');
+                });
+            });
+        });
+    </script>
+{% endblock %}

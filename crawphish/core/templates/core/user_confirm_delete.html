@@ -1,0 +1,12 @@
+<!-- templates/core/user_confirm_delete.html -->
+{% extends 'core/base.html' %}
+{% block title %}Delete User{% endblock %}
+{% block content %}
+    <h1>Delete User: {{ object.username }}</h1>
+    <p>Are you sure you want to delete "{{ object.username }}"?</p>
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">Yes, Delete</button>
+        <a href="{% url 'core:user_management' %}" class="btn btn-secondary">Cancel</a>
+    </form>
+{% endblock %}

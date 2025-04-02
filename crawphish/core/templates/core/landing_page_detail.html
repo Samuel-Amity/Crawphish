@@ -1,0 +1,13 @@
+{% extends 'core/base.html' %}
+{% block title %}{{ landing_page.name }}{% endblock %}
+{% block content %}
+    <h1>{{ landing_page.name }}</h1>
+    <p><strong>Modified Date:</strong> {{ landing_page.modified_date }}</p>
+    <p><strong>Capture Submitted Data:</strong> {% if landing_page.capture_submitted_data %}Yes{% else %}No{% endif %}</p>
+    <div>
+        <h2>HTML Content</h2>
+        <pre>{{ landing_page.html_content|escape }}</pre>
+    </div>
+    <a href="{% url 'core:landing_page_edit' landing_page.pk %}" class="btn btn-warning">Edit</a>
+    <a href="{% url 'core:landing_pages' %}" class="btn btn-secondary">Back to List</a>
+{% endblock %}

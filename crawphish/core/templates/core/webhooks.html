@@ -1,0 +1,202 @@
+<!-- templates/core/webhooks.html -->
+{% extends 'core/base.html' %}
+{% block title %}Webhooks{% endblock %}
+{% block content %}
+    <h1>Webhooks</h1>
+
+    <!-- Create Webhook Button -->
+    <button type="button" class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#createWebhookModal">
+        + New Webhook
+    </button>
+
+    <!-- Webhooks Table -->
+    {% if webhooks %}
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>URL</th>
+                    <th>Events</th>
+                    <th>Created At</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for webhook in webhooks %}
+                    <tr data-webhook-id="{{ webhook.pk }}">
+                        <td>{{ webhook.name }}</td>
+                        <td>{{ webhook.url }}</td>
+                        <td>{{ webhook.events|join:", " }}</td>
+                        <td>{{ webhook.created_at }}</td>
+                        <td>
+                            <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editWebhookModal{{ webhook.pk }}">Edit</button>
+                            <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteWebhookModal{{ webhook.pk }}">Delete</button>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <div class="alert alert-info" role="alert">
+            No webhooks created yet. Let's create one!
+        </div>
+    {% endif %}
+
+    <!-- Create Webhook Modal -->
+    <div class="modal fade" id="createWebhookModal" tabindex="-1" aria-labelledby="createWebhookModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="createWebhookModalLabel">Create Webhook</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="createWebhookForm" method="post" action="{% url 'core:webhook_create' %}">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Name</label>
+                            <input type="text" class="form-control" id="name" name="name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="url" class="form-label">URL</label>
+                            <input type="url" class="form-control" id="url" name="url" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Events</label>
+                            <div>
+                                <input type="checkbox" id="event_sent" name="events" value="sent">
+                                <label for="event_sent">Email Sent</label>
+                            </div>
+                            <div>
+                                <input type="checkbox" id="event_opened" name="events" value="opened">
+                                <label for="event_opened">Email Opened</label>
+                            </div>
+                            <div>
+                                <input type="checkbox" id="event_clicked" name="events" value="clicked">
+                                <label for="event_clicked">Link Clicked</label>
+                            </div>
+                            <div>
+                                <input type="checkbox" id="event_submitted" name="events" value="submitted">
+                                <label for="event_submitted">Data Submitted</label>
+                            </div>
+                            <div>
+                                <input type="checkbox" id="event_reported" name="events" value="reported">
+                                <label for="event_reported">Email Reported</label>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Save</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Webhook Modals -->
+    {% for webhook in webhooks %}
+        <div class="modal fade" id="editWebhookModal{{ webhook.pk }}" tabindex="-1" aria-labelledby="editWebhookModalLabel{{ webhook.pk }}" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="editWebhookModalLabel{{ webhook.pk }}">Edit Webhook: {{ webhook.name }}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="editWebhookForm{{ webhook.pk }}" method="post" action="{% url 'core:webhook_edit' webhook.pk %}">
+                            {% csrf_token %}
+                            <div class="mb-3">
+                                <label for="name_{{ webhook.pk }}" class="form-label">Name</label>
+                                <input type="text" class="form-control" id="name_{{ webhook.pk }}" name="name" value="{{ webhook.name }}" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="url_{{ webhook.pk }}" class="form-label">URL</label>
+                                <input type="url" class="form-control" id="url_{{ webhook.pk }}" name="url" value="{{ webhook.url }}" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Events</label>
+                                <div>
+                                    <input type="checkbox" id="event_sent_{{ webhook.pk }}" name="events" value="sent" {% if "sent" in webhook.events %}checked{% endif %}>
+                                    <label for="event_sent_{{ webhook.pk }}">Email Sent</label>
+                                </div>
+                                <div>
+                                    <input type="checkbox" id="event_opened_{{ webhook.pk }}" name="events" value="opened" {% if "opened" in webhook.events %}checked{% endif %}>
+                                    <label for="event_opened_{{ webhook.pk }}">Email Opened</label>
+                                </div>
+                                <div>
+                                    <input type="checkbox" id="event_clicked_{{ webhook.pk }}" name="events" value="clicked" {% if "clicked" in webhook.events %}checked{% endif %}>
+                                    <label for="event_clicked_{{ webhook.pk }}">Link Clicked</label>
+                                </div>
+                                <div>
+                                    <input type="checkbox" id="event_submitted_{{ webhook.pk }}" name="events" value="submitted" {% if "submitted" in webhook.events %}checked{% endif %}>
+                                    <label for="event_submitted_{{ webhook.pk }}">Data Submitted</label>
+                                </div>
+                                <div>
+                                    <input type="checkbox" id="event_reported_{{ webhook.pk }}" name="events" value="reported" {% if "reported" in webhook.events %}checked{% endif %}>
+                                    <label for="event_reported_{{ webhook.pk }}">Email Reported</label>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Save</button>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+
+    <!-- Delete Webhook Modals -->
+    {% for webhook in webhooks %}
+        <div class="modal fade" id="deleteWebhookModal{{ webhook.pk }}" tabindex="-1" aria-labelledby="deleteWebhookModalLabel{{ webhook.pk }}" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="deleteWebhookModalLabel{{ webhook.pk }}">Delete Webhook: {{ webhook.name }}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Are you sure you want to delete "{{ webhook.name }}"?</p>
+                        <form id="deleteWebhookForm{{ webhook.pk }}" method="post" action="{% url 'core:webhook_delete' webhook.pk %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger">Yes, Delete</button>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+
+    <script>
+        // Handle form submissions via AJAX
+        document.querySelectorAll('form[id^="createWebhookForm"], form[id^="editWebhookForm"], form[id^="deleteWebhookForm"]').forEach(form => {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const formData = new FormData(this);
+                fetch(this.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRFToken': form.querySelector('[name=csrfmiddlewaretoken]').value
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const modal = this.closest('.modal');
+                        const bsModal = bootstrap.Modal.getInstance(modal);
+                        bsModal.hide();
+                        window.location.href = data.redirect_url;
+                    } else {
+                        console.error('Form errors:', data.errors);
+                        alert('There was an error with your submission. Please check the form.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred. Please try again.');
+                });
+            });
+        });
+    </script>
+{% endblock %}

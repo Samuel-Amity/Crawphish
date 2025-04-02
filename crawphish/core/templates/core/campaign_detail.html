@@ -1,0 +1,86 @@
+
+{% extends 'core/base.html' %}
+{% block title %}Campaign Details - {{ campaign.name }}{% endblock %}
+{% block content %}
+    <h1>Campaign Details: {{ campaign.name }}</h1>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5 class="mb-3">Basic Information</h5>
+                    <p><strong>Name:</strong> {{ campaign.name }}</p>
+                    <p><strong>Status:</strong> <span class="badge bg-{% if campaign.status == 'active' %}success{% else %}secondary{% endif %}">{{ campaign.get_status_display }}</span></p>
+                    <p><strong>Start Date:</strong> {{ campaign.launch_date|date:"M d, Y H:i" }}</p>
+                    <p><strong>End Date:</strong> {{ campaign.end_date|date:"M d, Y H:i"|default:"-" }}</p>
+                    <p><strong>Frequency:</strong> {{ campaign.get_frequency_display }}</p>
+                    <p><strong>Sending Period:</strong> {{ campaign.get_sending_period_type_display }}{% if campaign.sending_period_days %} ({{ campaign.sending_period_days }} days){% endif %}</p>
+                </div>
+                <div class="col-md-6">
+                    <h5 class="mb-3">Tracking Settings</h5>
+                    <p><strong>Track Activity Duration:</strong> {{ campaign.track_activity_duration }} days</p>
+                    <p><strong>Track Replied Emails:</strong> <span class="badge bg-{% if campaign.track_replied_emails %}success{% else %}secondary{% endif %}">{{ campaign.track_replied_emails|yesno|capfirst }}</span></p>
+                    <p><strong>Send Report After End:</strong> <span class="badge bg-{% if campaign.send_report_after_end %}success{% else %}secondary{% endif %}">{{ campaign.send_report_after_end|yesno|capfirst }}</span></p>
+                    <p><strong>Hide from Dashboard:</strong> <span class="badge bg-{% if campaign.hide_from_dashboard %}success{% else %}secondary{% endif %}">{{ campaign.hide_from_dashboard|yesno|capfirst }}</span></p>
+                </div>
+            </div>
+
+            <hr class="my-4">
+
+            <div class="row">
+                <div class="col-md-6">
+                    <h5 class="mb-3">Recipients</h5>
+                    <p><strong>Send To:</strong> 
+                        {% if campaign.send_to_all_users %}
+                            <span class="badge bg-primary">All Users</span>
+                        {% else %}
+                            {% for group in campaign.groups.all %}
+                                <span class="badge bg-info">{{ group.name }}</span>
+                            {% empty %}
+                                <span class="text-muted">None</span>
+                            {% endfor %}
+                        {% endif %}
+                    </p>
+                    <p><strong>Clicker Groups:</strong> 
+                        {% for group in campaign.clicker_groups.all %}
+                            <span class="badge bg-warning text-dark">{{ group.name }}</span>
+                        {% empty %}
+                            <span class="text-muted">None</span>
+                        {% endfor %}
+                    </p>
+                    <p><strong>Submitter Groups:</strong> 
+                        {% for group in campaign.submitter_groups.all %}
+                            <span class="badge bg-danger">{{ group.name }}</span>
+                        {% empty %}
+                            <span class="text-muted">None</span>
+                        {% endfor %}
+                    </p>
+                </div>
+                <div class="col-md-6">
+                    <h5 class="mb-3">Components</h5>
+                    <p><strong>Email Templates:</strong> 
+                        {% for template in campaign.email_templates.all %}
+                            <span class="badge bg-primary">{{ template.name }}</span>
+                        {% empty %}
+                            <span class="text-muted">None</span>
+                        {% endfor %}
+                    </p>
+                    <p><strong>Landing Pages:</strong> 
+                        {% for page in campaign.landing_pages.all %}
+                            <span class="badge bg-success">{{ page.name }}</span>
+                        {% empty %}
+                            <span class="text-muted">None</span>
+                        {% endfor %}
+                    </p>
+                    <p><strong>Sending Profile:</strong> <span class="badge bg-secondary">{{ campaign.sending_profile }}</span></p>
+                    <p><strong>URL:</strong> <code>{{ campaign.url }}</code></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex gap-2">
+        <a href="{% url 'core:campaign_edit' campaign.pk %}" class="btn btn-primary">Edit Campaign</a>
+        <a href="{% url 'core:campaigns' %}" class="btn btn-secondary">Back to Campaigns</a>
+    </div>
+{% endblock %}

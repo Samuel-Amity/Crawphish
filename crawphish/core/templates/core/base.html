@@ -1,0 +1,176 @@
+<!-- templates/core/base.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Phishing Simulation{% endblock %}</title>
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.tiny.cloud/1/2whde5zefxzddw4vyxi1vk7n1116go0v9sewg3omvbcdj5t5/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+        .container-fluid {
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .header {
+            background-color: #2F3A44; /* GoPhish navbar color */
+            color: white;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1000; /* Ensure header is above everything */
+        }
+        .header .logo {
+            font-size: 24px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+        }
+        .header .logo img {
+            height: 24px;
+            margin-right: 8px;
+        }
+        .main-content-wrapper {
+            display: flex;
+            flex: 1;
+            margin-top: 60px; /* Offset for the fixed header */
+        }
+        .sidebar {
+            width: 200px;
+            background-color: #F5F6F5; /* GoPhish sidebar color */
+            padding: 20px;
+            border-right: 1px solid #dee2e6;
+            height: calc(100vh - 60px); /* Adjust height to account for header */
+            position: fixed;
+            top: 60px; /* Start below the header */
+            left: 0;
+            z-index: 999;
+        }
+        .sidebar h4 {
+            font-size: 18px;
+            margin-bottom: 20px;
+        }
+        .sidebar .nav-link {
+            color: #333;
+            padding: 8px 0;
+            font-size: 14px;
+        }
+        .sidebar .nav-link.active {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .sidebar .nav-link:hover {
+            color: #28a745;
+        }
+        .main-content {
+            flex: 1;
+            margin-left: 200px; /* Offset for the sidebar */
+            padding: 20px;
+        }
+        /* Adjust for unauthenticated users */
+        .main-content.unauthenticated {
+            margin-left: 0;
+        }
+        .main-content-wrapper.unauthenticated {
+            margin-top: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <!-- Header (outside the main-content-wrapper) -->
+        {% if request.user.is_authenticated %}
+            <div class="header">
+                <div class="logo">
+                    <!-- Placeholder for GoPhish logo icon (replace with actual icon) -->
+                    <span style="color: #28a745;">Craw</span> phish
+                </div>
+                <div>
+                    <span class="text-white me-2">{{ request.user.username }}</span>
+                    <a href="{% url 'logout' %}" class="btn btn-success btn-sm">Logout</a>
+                </div>
+            </div>
+        {% endif %}
+
+        <!-- Main content wrapper (sidebar + content) -->
+        <div class="main-content-wrapper {% if not request.user.is_authenticated %}unauthenticated{% endif %}">
+            {% if request.user.is_authenticated %}
+                <!-- Sidebar -->
+                <div class="sidebar">
+                    <h3 style="color: rgb(31, 141, 141);">Menu</h3>
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'core:dashboard' %}">Dashboard</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.resolver_match.url_name == 'campaigns' %}active{% endif %}" href="{% url 'core:campaigns' %}">Campaigns</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.resolver_match.url_name == 'users_groups' %}active{% endif %}" href="{% url 'core:users_groups' %}">Users & Groups</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.resolver_match.url_name == 'email_templates' %}active{% endif %}" href="{% url 'core:email_templates' %}">Email Templates</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.resolver_match.url_name == 'landing_pages' %}active{% endif %}" href="{% url 'core:landing_pages' %}">Landing Pages</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.resolver_match.url_name == 'sending_profiles' %}active{% endif %}" href="{% url 'core:sending_profiles' %}">Sending Profiles</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.resolver_match.url_name == 'settings' %}active{% endif %}" href="{% url 'core:settings' %}">Account Settings</a>
+                        </li>
+                        {% if request.user.is_superuser %}
+                            <li class="nav-item">
+                                <a class="nav-link {% if request.resolver_match.url_name == 'user_management' %}active{% endif %}" href="{% url 'core:user_management' %}">User Management</a>
+                            </li>
+                        {% endif %}
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.resolver_match.url_name == 'webhooks' %}active{% endif %}" href="{% url 'core:webhooks' %}">Webhooks</a>
+                        </li>
+                        <li class="nav-item">
+                            <h6 style="color: rgb(31, 141, 141);" class="mt-3">User Guide</h6>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#">API Documentation</a>
+                        </li>
+                    </ul>
+                </div>
+            {% endif %}
+
+            <!-- Main Content -->
+            <div class="main-content {% if not request.user.is_authenticated %}unauthenticated{% endif %}">
+                {% block content %}{% endblock %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS and Popper.js -->
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            tinymce.init({
+                selector: '.tinymce',
+                plugins: 'preview code',
+                toolbar: 'undo redo | styles | bold italic | alignleft aligncenter alignright alignjustify | outdent indent | preview code',
+                menubar: 'file edit view insert format tools table help'
+            });
+        });
+    </script>
+</body>
+</html>

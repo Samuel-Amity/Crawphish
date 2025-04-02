@@ -1,0 +1,14 @@
+{% extends 'core/base.html' %}
+{% block title %}{{ profile.name }}{% endblock %}
+{% block content %}
+    <h1>{{ profile.name }}</h1>
+    <p><strong>Interface Type:</strong> {{ profile.interface_type }}</p>
+    <p><strong>SMTP From:</strong> {{ profile.smtp_from }}</p>
+    <p><strong>Host:</strong> {{ profile.host }}</p>
+    <p><strong>Port:</strong> {{ profile.port }}</p>
+    <p><strong>Username:</strong> {{ profile.username }}</p>
+    <p><strong>Ignore Cert Errors:</strong> {{ profile.ignore_cert_errors }}</p>
+    <p><strong>Email Headers:</strong> {{ profile.email_headers }}</p>
+    <p><strong>Modified Date:</strong> {{ profile.modified_date }}</p>
+    <a href="{% url 'core:sending_profiles' %}" class="btn btn-secondary">Back to List</a>
+{% endblock %}

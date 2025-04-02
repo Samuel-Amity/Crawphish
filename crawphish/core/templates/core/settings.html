@@ -1,0 +1,57 @@
+<!-- templates/core/settings.html -->
+{% extends 'core/base.html' %}
+{% block title %}Account Settings{% endblock %}
+{% block content %}
+    <h1>Account Settings</h1>
+
+    <form id="settingsForm" method="post" class="w-50">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label for="username" class="form-label">Username:</label>
+            <input type="text" class="form-control" id="username" name="username" value="{{ request.user.username }}">
+        </div>
+        <div class="mb-3">
+            <label for="password" class="form-label">Current Password:</label>
+            <input type="password" class="form-control" id="password" name="password">
+        </div>
+        <div class="mb-3">
+            <label for="new_password" class="form-label">New Password:</label>
+            <input type="password" class="form-control" id="new_password" name="new_password">
+        </div>
+        <div class="mb-3">
+            <label for="api_key" class="form-label">API Key:</label>
+            <input type="text" class="form-control" id="api_key" name="api_key" value="{{ request.user.api_key|default:'Not set' }}" readonly>
+            <button type="button" class="btn btn-secondary mt-2" onclick="alert('API Key regeneration not implemented yet.')">Regenerate API Key</button>
+        </div>
+        <button type="submit" class="btn btn-primary">Save</button>
+    </form>
+
+    <script>
+        document.getElementById('settingsForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            fetch(this.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Settings updated successfully!');
+                    window.location.reload();
+                } else {
+                    console.error('Form errors:', data.errors);
+                    alert('There was an error with your submission. Please check the form.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred. Please try again.');
+            });
+        });
+    </script>
+{% endblock %}

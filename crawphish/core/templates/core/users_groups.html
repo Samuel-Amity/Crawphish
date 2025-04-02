@@ -1,0 +1,498 @@
+{% extends 'core/base.html' %}
+{% block title %}Users & Groups{% endblock %}
+{% block content %}
+<div class="container">
+
+    <h1>Users & Groups</h1>
+
+    <button type="button" class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#createGroupModal" data-bs-toggle="tooltip" title="Create a new group">
+        + New Group
+    </button>
+
+    {% if groups %}
+        <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Name</th>
+                        <th>No. of Members</th>
+                        <th>Modified Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for group in groups %}
+                        <tr data-group-id="{{ group.pk }}">
+                            <td>{{ group.name }}</td>
+                            <td>{{ group.member_count }}</td>
+                            <td>{{ group.modified_date|date:"M d, Y H:i"|default:"N/A" }}</td>
+                            <td>
+                                <div class="d-flex gap-1">
+                                    <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editGroupModal{{ group.pk }}" data-bs-toggle="tooltip" title="Edit">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-danger delete-group-btn" data-group-id="{{ group.pk }}" data-bs-toggle="tooltip" title="Delete">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="alert alert-info" role="alert">
+            No groups created yet. Let's create one!
+        </div>
+    {% endif %}
+
+    <!-- Create Group Modal -->
+    <div class="modal fade" id="createGroupModal" tabindex="-1" aria-labelledby="createGroupModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="createGroupModalLabel">New Group</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="createGroupForm" method="post" action="{% url 'core:group_create' %}" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="id_name" class="form-label">Name:</label>
+                            <input type="text" class="form-control" id="id_name" name="name" placeholder="Group name" required>
+                        </div>
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between">
+                                <button type="button" class="btn btn-danger" id="bulkImportBtn">+ Bulk Import Users</button>
+                                <a href="{% url 'core:download_csv_template' %}" class="btn btn-link">Download CSV Template</a>
+                            </div>
+                            <input type="file" class="form-control d-none" id="bulkImportFile" name="bulk_import_file" accept=".csv">
+                            <div id="csvFeedback" class="mt-2 text-muted"></div>
+                        </div>
+                        <div class="mb-3">
+                            <h6>Add User Manually</h6>
+                            <div class="row">
+                                <div class="col">
+                                    <input type="text" class="form-control" id="manualFirstName" placeholder="First Name">
+                                </div>
+                                <div class="col">
+                                    <input type="text" class="form-control" id="manualLastName" placeholder="Last Name">
+                                </div>
+                                <div class="col">
+                                    <input type="email" class="form-control" id="manualEmail" placeholder="Email">
+                                </div>
+                                <div class="col">
+                                    <input type="text" class="form-control" id="manualPosition" placeholder="Position">
+                                </div>
+                                <div class="col-auto">
+                                    <button type="button" class="btn btn-danger" id="addManualBtn">+ Add</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3" style="max-height: 300px; overflow-y: auto;">
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover align-middle" id="membersTable">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th>First Name</th>
+                                            <th>Last Name</th>
+                                            <th>Email</th>
+                                            <th>Position</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="membersTableBody">
+                                        <!-- Populated via JavaScript -->
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div id="entryFeedback" class="mt-2 text-success"></div>
+                        </div>
+                        <button type="submit" class="btn btn-success">Save changes</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Group Modals -->
+    {% for group in groups %}
+        <div class="modal fade" id="editGroupModal{{ group.pk }}" tabindex="-1" aria-labelledby="editGroupModalLabel{{ group.pk }}" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="editGroupModalLabel{{ group.pk }}">Edit Group: {{ group.name }}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="editGroupForm{{ group.pk }}" method="post" action="{% url 'core:group_edit' group.pk %}" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            <div class="mb-3">
+                                <label for="id_name_{{ group.pk }}" class="form-label">Name:</label>
+                                <input type="text" class="form-control" id="id_name_{{ group.pk }}" name="name" value="{{ group.name }}" required>
+                            </div>
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between">
+                                    <button type="button" class="btn btn-danger" id="bulkImportBtn{{ group.pk }}">+ Bulk Import Users</button>
+                                    <a href="{% url 'core:download_csv_template' %}" class="btn btn-link">Download CSV Template</a>
+                                </div>
+                                <input type="file" class="form-control d-none" id="bulkImportFile{{ group.pk }}" name="bulk_import_file" accept=".csv">
+                                <div id="csvFeedback{{ group.pk }}" class="mt-2 text-muted"></div>
+                            </div>
+                            <div class="mb-3">
+                                <h6>Add User Manually</h6>
+                                <div class="row">
+                                    <div class="col">
+                                        <input type="text" class="form-control" id="manualFirstName{{ group.pk }}" placeholder="First Name">
+                                    </div>
+                                    <div class="col">
+                                        <input type="text" class="form-control" id="manualLastName{{ group.pk }}" placeholder="Last Name">
+                                    </div>
+                                    <div class="col">
+                                        <input type="email" class="form-control" id="manualEmail{{ group.pk }}" placeholder="Email">
+                                    </div>
+                                    <div class="col">
+                                        <input type="text" class="form-control" id="manualPosition{{ group.pk }}" placeholder="Position">
+                                    </div>
+                                    <div class="col-auto">
+                                        <button type="button" class="btn btn-danger" id="addManualBtn{{ group.pk }}">+ Add</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-3" style="max-height: 300px; overflow-y: auto;">
+                                <div class="table-responsive">
+                                    <table class="table table-striped table-hover align-middle" id="membersTable{{ group.pk }}">
+                                        <thead class="table-dark">
+                                            <tr>
+                                                <th>First Name</th>
+                                                <th>Last Name</th>
+                                                <th>Email</th>
+                                                <th>Position</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="membersTableBody{{ group.pk }}">
+                                            {% for member in group.members.all %}
+                                                <tr>
+                                                    <td>{{ member.first_name }}</td>
+                                                    <td>{{ member.last_name }}</td>
+                                                    <td>{{ member.email }}</td>
+                                                    <td>{{ member.position }}</td>
+                                                    <td><button type="button" class="btn btn-danger btn-sm remove-row">Remove</button></td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div id="entryFeedback{{ group.pk }}" class="mt-2 text-success"></div>
+                            </div>
+                            <button type="submit" class="btn btn-success">Save changes</button>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+
+    <!-- Delete Group Modals -->
+    {% for group in groups %}
+        <div class="modal fade" id="deleteGroupModal{{ group.pk }}" tabindex="-1" aria-labelledby="deleteGroupModalLabel{{ group.pk }}" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="deleteGroupModalLabel{{ group.pk }}">Delete Group: {{ group.name }}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Are you sure you want to delete "{{ group.name }}"?</p>
+                        <form id="deleteGroupForm{{ group.pk }}" method="post" action="{% url 'core:group_delete' group.pk %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger">Yes, Delete</button>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+
+    <script>
+        // Handle form submissions via AJAX
+        function handleFormSubmit(form) {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const tbody = this.querySelector('tbody');
+                const rows = tbody.getElementsByTagName('tr');
+                const csvFileInput = document.getElementById('bulkImportFile');
+
+                if (!csvFileInput.files.length && rows.length === 0) {
+                    alert('Please upload a CSV or add at least one manual entry.');
+                    return;
+                }
+
+                const existingInputs = this.querySelectorAll('input[name="first_name[]"], input[name="last_name[]"], input[name="email[]"], input[name="position[]"]');
+                existingInputs.forEach(input => input.remove());
+
+                for (let i = 0; i < rows.length; i++) {
+                    const cells = rows[i].getElementsByTagName('td');
+                    const firstName = cells[0].textContent.trim();
+                    const lastName = cells[1].textContent.trim();
+                    const email = cells[2].textContent.trim();
+                    const position = cells[3].textContent.trim();
+                    this.insertAdjacentHTML('beforeend', `
+                        <input type="hidden" name="first_name[]" value="${firstName}">
+                        <input type="hidden" name="last_name[]" value="${lastName}">
+                        <input type="hidden" name="email[]" value="${email}">
+                        <input type="hidden" name="position[]" value="${position}">
+                    `);
+                }
+
+                const formData = new FormData(this);
+                formData.delete('bulk_import_file');
+
+                fetch(this.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRFToken': form.querySelector('[name=csrfmiddlewaretoken]').value
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const modal = this.closest('.modal');
+                        const bsModal = bootstrap.Modal.getInstance(modal);
+                        bsModal.hide();
+                        window.location.href = data.redirect_url;
+                    } else {
+                        alert('Error: ' + (data.errors || 'Unknown error occurred.'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error: ' + error.message);
+                });
+            });
+        }
+
+        // Handle deletion via AJAX
+        document.querySelectorAll('.delete-group-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const groupId = this.getAttribute('data-group-id');
+                const modal = document.getElementById(`deleteGroupModal${groupId}`);
+                const bsModal = new bootstrap.Modal(modal);
+                bsModal.show();
+
+                const form = document.getElementById(`deleteGroupForm${groupId}`);
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const formData = new FormData(this);
+                    fetch(this.action, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRFToken': form.querySelector('[name=csrfmiddlewaretoken]').value
+                        }
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            return response.text().then(text => {
+                                throw new Error(`Network response was not ok: ${response.status} ${text}`);
+                            });
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.success) {
+                            bsModal.hide();
+                            window.location.href = data.redirect_url;
+                        } else {
+                            alert('Error: ' + (data.message || 'Failed to delete group.'));
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Delete Error:', error);
+                        alert('Delete Error: ' + error.message);
+                    });
+                }, { once: true });
+            });
+        });
+
+        // Table management
+        function initializeTable(tableBodyId, addBtnId, feedbackId, csvFileId, csvFeedbackId, firstNameId, lastNameId, emailId, positionId) {
+            const tbody = document.getElementById(tableBodyId);
+            const addBtn = document.getElementById(addBtnId);
+            const feedback = document.getElementById(feedbackId);
+            const csvFileInput = document.getElementById(csvFileId);
+            const csvFeedback = document.getElementById(csvFeedbackId);
+            const firstNameInput = document.getElementById(firstNameId);
+            const lastNameInput = document.getElementById(lastNameId);
+            const emailInput = document.getElementById(emailId);
+            const positionInput = document.getElementById(positionId);
+            let rowCount = tbody.getElementsByTagName('tr').length;
+
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+            function updateFeedback() {
+                feedback.textContent = `${rowCount} entries added`;
+            }
+
+            function isDuplicateEmail(email) {
+                const rows = tbody.getElementsByTagName('tr');
+                for (let i = 0; i < rows.length; i++) {
+                    const cells = rows[i].getElementsByTagName('td');
+                    if (cells[2].textContent.trim() === email.trim()) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            addBtn.addEventListener('click', function() {
+                const firstName = firstNameInput.value.trim();
+                const lastName = lastNameInput.value.trim();
+                const email = emailInput.value.trim();
+                const position = positionInput.value.trim();
+
+                if (email) {
+                    if (!emailRegex.test(email)) {
+                        alert('Please enter a valid email address.');
+                        return;
+                    }
+                    if (isDuplicateEmail(email)) {
+                        alert('This email is already in the list.');
+                        return;
+                    }
+
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${firstName}</td>
+                        <td>${lastName}</td>
+                        <td>${email}</td>
+                        <td>${position}</td>
+                        <td><button type="button" class="btn btn-danger btn-sm remove-row">Remove</button></td>
+                    `;
+                    tbody.appendChild(row);
+                    rowCount++;
+                    updateFeedback();
+
+                    firstNameInput.value = '';
+                    lastNameInput.value = '';
+                    emailInput.value = '';
+                    positionInput.value = '';
+                }
+            });
+
+            tbody.addEventListener('click', function(e) {
+                if (e.target.classList.contains('remove-row')) {
+                    e.target.closest('tr').remove();
+                    rowCount--;
+                    updateFeedback();
+                }
+            });
+
+            if (csvFileInput && csvFeedback) {
+                csvFileInput.addEventListener('change', function() {
+                    if (this.files.length === 0) {
+                        csvFeedback.textContent = '';
+                        return;
+                    }
+
+                    const file = this.files[0];
+                    csvFeedback.textContent = `Selected file: ${file.name}`;
+
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const text = e.target.result;
+                        const rows = text.split('\n').map(row => row.split(',').map(cell => cell.trim()));
+                        const headers = rows[0];
+                        const dataRows = rows.slice(1).filter(row => row.length === headers.length && row[2]);
+
+                        dataRows.forEach(row => {
+                            const firstName = row[0] || '';
+                            const lastName = row[1] || '';
+                            const email = row[2] || '';
+                            const position = row[3] || '';
+
+                            if (!emailRegex.test(email)) {
+                                alert(`Invalid email format: ${email}. Skipping this entry.`);
+                                return;
+                            }
+                            if (isDuplicateEmail(email)) {
+                                alert(`Duplicate email: ${email}. Skipping this entry.`);
+                                return;
+                            }
+
+                            const tableRow = document.createElement('tr');
+                            tableRow.innerHTML = `
+                                <td>${firstName}</td>
+                                <td>${lastName}</td>
+                                <td>${email}</td>
+                                <td>${position}</td>
+                                <td><button type="button" class="btn btn-danger btn-sm remove-row">Remove</button></td>
+                            `;
+                            tbody.appendChild(tableRow);
+                            rowCount++;
+                        });
+
+                        updateFeedback();
+                    };
+                    reader.readAsText(file);
+                });
+            }
+
+            updateFeedback();
+        }
+
+        initializeTable(
+            'membersTableBody',
+            'addManualBtn',
+            'entryFeedback',
+            'bulkImportFile',
+            'csvFeedback',
+            'manualFirstName',
+            'manualLastName',
+            'manualEmail',
+            'manualPosition'
+        );
+
+        {% for group in groups %}
+            initializeTable(
+                'membersTableBody{{ group.pk|escapejs }}',
+                'addManualBtn{{ group.pk|escapejs }}',
+                'entryFeedback{{ group.pk|escapejs }}',
+                'bulkImportFile{{ group.pk|escapejs }}',
+                'csvFeedback{{ group.pk|escapejs }}',
+                'manualFirstName{{ group.pk|escapejs }}',
+                'manualLastName{{ group.pk|escapejs }}',
+                'manualEmail{{ group.pk|escapejs }}',
+                'manualPosition{{ group.pk|escapejs }}'
+            );
+            document.getElementById(`bulkImportBtn{{ group.pk|escapejs }}`).addEventListener('click', function() {
+                document.getElementById(`bulkImportFile{{ group.pk|escapejs }}`).click();
+            });
+        {% endfor %}
+
+        document.getElementById('bulkImportBtn').addEventListener('click', function() {
+            document.getElementById('bulkImportFile').click();
+        });
+
+        document.querySelectorAll('form[id^="createGroupForm"], form[id^="editGroupForm"]').forEach(form => {
+            handleFormSubmit(form);
+        });
+
+        // Initialize tooltips
+        document.addEventListener("DOMContentLoaded", function() {
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+        });
+    </script>
+</div>
+{% endblock %}

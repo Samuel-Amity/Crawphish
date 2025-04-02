@@ -1,0 +1,40 @@
+{% extends 'core/base.html' %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="container">
+    <h1>Dashboard</h1>
+    <h2>Metrics</h2>
+    <ul class="list-group mb-3">
+        <li class="list-group-item">Total Campaigns: {{ metrics.total_campaigns }}</li>
+        <li class="list-group-item">Emails Sent: {{ metrics.emails_sent }}</li>
+        <li class="list-group-item">Emails Opened: {{ metrics.emails_opened }}</li>
+        <li class="list-group-item">Links Clicked: {{ metrics.links_clicked }}</li>
+        <li class="list-group-item">Data Submitted: {{ metrics.data_submitted }}</li>
+    </ul>
+    <h2>Campaign Statistics</h2>
+    <div class="table-responsive">
+        <table class="table table-striped table-hover align-middle">
+            <thead class="table-dark">
+                <tr>
+                    <th>Campaign</th>
+                    <th>Sent</th>
+                    <th>Opened</th>
+                    <th>Clicked</th>
+                    <th>Submitted</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for stat in campaign_stats %}
+                    <tr>
+                        <td>{{ stat.name }}</td>
+                        <td>{{ stat.sent }}</td>
+                        <td>{{ stat.opened }}</td>
+                        <td>{{ stat.clicked }}</td>
+                        <td>{{ stat.submitted }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

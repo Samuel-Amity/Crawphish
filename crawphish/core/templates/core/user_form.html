@@ -1,0 +1,12 @@
+<!-- templates/core/user_form.html -->
+{% extends 'core/base.html' %}
+{% block title %}{% if form.instance.pk %}Edit User{% else %}Create User{% endif %}{% endblock %}
+{% block content %}
+    <h1>{% if form.instance.pk %}Edit User: {{ form.instance.username }}{% else %}Create User{% endif %}</h1>
+    <form method="post" class="w-50">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="btn btn-primary">Save</button>
+        <a href="{% url 'core:user_management' %}" class="btn btn-secondary">Cancel</a>
+    </form>
+{% endblock %}

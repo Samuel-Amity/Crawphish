@@ -1,0 +1,128 @@
+{% extends 'core/base.html' %}
+{% block title %}Edit Email Template{% endblock %}
+{% block content %}
+<div class="container">
+  <div class="row justify-content-center">
+    <div class="col-md-8">
+      <div class="card mt-4">
+        <div class="card-header">
+          <h1 class="card-title">Edit Email Template</h1>
+        </div>
+        <div class="card-body">
+          <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            {{ form.management_form }}
+
+            <div class="mb-3">
+              {{ form.name.label_tag }}
+              {{ form.name }}
+              {% if form.name.errors %}
+                <div class="alert alert-danger">{{ form.name.errors }}</div>
+              {% endif %}
+            </div>
+
+            <div class="mb-3">
+              {{ form.envelope_sender.label_tag }}
+              {{ form.envelope_sender }}
+              {% if form.envelope_sender.errors %}
+                <div class="alert alert-danger">{{ form.envelope_sender.errors }}</div>
+              {% endif %}
+              {% if form.envelope_sender.help_text %}
+                <small class="form-text text-muted">{{ form.envelope_sender.help_text }}</small>
+              {% endif %}
+            </div>
+
+            <div class="mb-3">
+              {{ form.subject.label_tag }}
+              {{ form.subject }}
+              {% if form.subject.errors %}
+                <div class="alert alert-danger">{{ form.subject.errors }}</div>
+              {% endif %}
+            </div>
+
+            <div class="mb-3 form-check">
+              {{ form.add_tracking_image }}
+              <label class="form-check-label" for="{{ form.add_tracking_image.id_for_label }}">
+                {{ form.add_tracking_image.label }}
+              </label>
+              {% if form.add_tracking_image.errors %}
+                <div class="alert alert-danger">{{ form.add_tracking_image.errors }}</div>
+              {% endif %}
+            </div>
+
+            <div class="mb-3">
+              {{ form.difficulty.label_tag }}
+              {{ form.difficulty }}
+              {% if form.difficulty.errors %}
+                <div class="alert alert-danger">{{ form.difficulty.errors }}</div>
+              {% endif %}
+              {% if form.difficulty.help_text %}
+                <small class="form-text text-muted">{{ form.difficulty.help_text }}</small>
+              {% endif %}
+            </div>
+
+            <hr class="my-4">
+
+            <ul class="nav nav-tabs" id="templateTabs" role="tablist">
+              <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="plain-text-tab" data-bs-toggle="tab" data-bs-target="#plain-text" type="button" role="tab" aria-controls="plain-text" aria-selected="true">
+                  Plain Text Content
+                </button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link" id="html-tab" data-bs-toggle="tab" data-bs-target="#html" type="button" role="tab" aria-controls="html" aria-selected="false">
+                  HTML Content
+                </button>
+              </li>
+            </ul>
+            <div class="tab-content mt-3" id="templateTabContent">
+              <div class="tab-pane fade show active" id="plain-text" role="tabpanel" aria-labelledby="plain-text-tab">
+                <div class="mb-3">
+                  {{ form.plain_content.label_tag }}
+                  {{ form.plain_content }}
+                  {% if form.plain_content.errors %}
+                    <div class="alert alert-danger">{{ form.plain_content.errors }}</div>
+                  {% endif %}
+                </div>
+              </div>
+              <div class="tab-pane fade" id="html" role="tabpanel" aria-labelledby="html-tab">
+                <div class="mb-3">
+                  {{ form.html_content.label_tag }}
+                  {{ form.html_content }}
+                  {% if form.html_content.errors %}
+                    <div class="alert alert-danger">{{ form.html_content.errors }}</div>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              {{ form.attachment.label_tag }}
+              {{ form.attachment }}
+              {% if form.attachment.errors %}
+                <div class="alert alert-danger">{{ form.attachment.errors }}</div>
+              {% endif %}
+              
+            </div>
+            
+            <button type="submit" class="btn btn-success">Update Template</button>
+            <a href="{% url 'core:email_templates' %}" class="btn btn-secondary">Cancel</a>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+  // Ensure Bootstrap's tab functionality works
+  var triggerTabList = [].slice.call(document.querySelectorAll('#templateTabs button'))
+  triggerTabList.forEach(function (tabEl) {
+    tabEl.addEventListener('click', function (event) {
+      event.preventDefault()
+      bootstrap.Tab.getInstance(tabEl).show()
+    })
+  })
+</script>
+{% endblock %}

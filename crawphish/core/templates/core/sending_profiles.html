@@ -1,0 +1,66 @@
+{% extends 'core/base.html' %}
+{% block title %}Sending Profiles{% endblock %}
+{% block content %}
+<div class="container">
+    <h1>Sending Profiles</h1>
+
+    <a href="{% url 'core:sending_profile_create' %}" class="btn btn-success mb-3" data-bs-toggle="tooltip" title="Create a new sending profile">
+        + New Sending Profile
+    </a>
+
+    {% if sending_profiles %}
+        <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Name</th>
+                        <th>Interface Type</th>
+                        <th>Modified Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for profile in sending_profiles %}
+                        <tr data-profile-id="{{ profile.pk }}">
+                            <td>{{ profile.name }}</td>
+                            <td>{{ profile.interface_type }}</td>
+                            <td>{{ profile.modified_date|date:"M d, Y H:i" }}</td>
+                            <td>
+                                <div class="d-flex gap-1">
+                                    <a href="{% url 'core:sending_profile_detail' profile.pk %}" class="btn btn-info btn-sm" data-bs-toggle="tooltip" title="View details">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <a href="{% url 'core:sending_profile_edit' profile.pk %}" class="btn btn-sm btn-warning" data-bs-toggle="tooltip" title="Edit">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <form action="{% url 'core:sending_profile_delete' profile.pk %}" method="post" class="d-inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-danger btn-sm" data-bs-toggle="tooltip" title="Delete" onclick="return confirm('Delete {{ profile.name }}?')">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                    <a href="{% url 'core:sending_profile_copy' profile.pk %}" class="btn btn-sm btn-secondary" data-bs-toggle="tooltip" title="Copy">
+                                        <i class="bi bi-files"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="alert alert-info" role="alert">
+            No sending profiles created yet. <a href="{% url 'core:sending_profile_create' %}">Let's create one!</a>
+        </div>
+    {% endif %}
+</div>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    });
+</script>
+{% endblock %}
