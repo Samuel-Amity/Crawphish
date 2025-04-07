@@ -2,9 +2,6 @@ from django import forms
 from .models import *
 
 class CampaignForm(forms.ModelForm):
-    campaign_group = forms.ModelChoiceField(
-        queryset=CampaignGroup.objects.all(), required=False, empty_label="Custom"
-    )
     class Meta:
         model = Campaign
         fields = '__all__'
@@ -80,19 +77,43 @@ class LandingPageForm(forms.ModelForm):
         self.fields['capture_submitted_data'].widget.attrs.pop('class', None)
         self.fields['capture_submitted_data'].widget.attrs.update({'class': 'form-check-input'})
 
+# core/forms.py
 class SendingProfileForm(forms.ModelForm):
+    
     class Meta:
         model = SendingProfile
-        fields = ['name', 'interface_type', 'smtp_from', 'host', 'port', 'username', 'password', 'ignore_cert_errors', 'email_headers']
+        fields = ['name', 'interface_type', 'smtp_from', 'host', 'port', 'username', 'password', 
+                  'api_key', 'api_provider', 
+                  'ignore_cert_errors',
+                    'email_headers']
         widgets = {
             'email_headers': forms.Textarea(attrs={'rows': 4}),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['username'].required = False
-        self.fields['password'].required = False
-        self.fields['email_headers'].required = False
         for field in self.fields.values():
             field.widget.attrs.update({'class': 'form-control'})
+        # Make fields optional by default
+        self.fields['host'].required = False
+        self.fields['port'].required = False
+        self.fields['username'].required = False
+        self.fields['password'].required = False
+        self.fields['api_key'].required = False
+        self.fields['api_provider'].required = False
+
+    def clean(self):
+        cleaned_data = super().clean()
+        interface_type = cleaned_data.get('interface_type')
+        if interface_type == 'smtp':
+            if not cleaned_data.get('host'):
+                self.add_error('host', 'Host is required for SMTP.')
+            if not cleaned_data.get('port'):
+                self.add_error('port', 'Port is required for SMTP.')
+        elif interface_type == 'api':
+            if not cleaned_data.get('api_key'):
+                self.add_error('api_key', 'API key is required for API.')
+            if not cleaned_data.get('api_provider'):
+                self.add_error('api_provider', 'API provider is required for API.')
+        return cleaned_data
 

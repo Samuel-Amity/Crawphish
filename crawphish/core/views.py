@@ -1,6 +1,8 @@
 # Standard Library Imports
+import json
 import os
 import csv
+import string
 # Django Core and Utility Imports
 from django.conf import settings
 from django.http import JsonResponse, HttpResponse
@@ -11,7 +13,7 @@ from django.core.files.storage import FileSystemStorage
 from django.core.signing import Signer, BadSignature
 # Class-Based Views and Mixins
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView, TemplateView
+from django.views.generic import View, ListView, CreateView, UpdateView, DeleteView, DetailView, TemplateView
 # Application-Specific Imports
 from .models import *
 from .forms import *
@@ -33,24 +35,25 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             'emails_opened': CampaignEvent.objects.filter(event_type='opened').count(),
             'links_clicked': CampaignEvent.objects.filter(event_type='clicked').count(),
             'data_submitted': CampaignEvent.objects.filter(event_type='submitted').count(),
-            'emails_reported': CampaignEvent.objects.filter(event_type='reported').count(),
         }
-        context['campaigns'] = campaigns
-        context['metrics'] = metrics
-        
-        # Add per-campaign stats
-        campaign_stats = []
-        for campaign in campaigns:
-            stats = {
+        campaign_stats = [
+            {
                 'name': campaign.name,
                 'sent': campaign.events.filter(event_type='sent').count(),
                 'opened': campaign.events.filter(event_type='opened').count(),
                 'clicked': campaign.events.filter(event_type='clicked').count(),
                 'submitted': campaign.events.filter(event_type='submitted').count(),
-            }
-            campaign_stats.append(stats)
-        context['campaign_stats'] = campaign_stats
+            } for campaign in campaigns
+        ]
+        context.update({
+            'campaigns': campaigns,
+            'metrics': metrics,
+            'campaign_stats': campaign_stats,
+            'campaign_stats_json': json.dumps(campaign_stats),  # For JavaScript
+            'metrics_json': json.dumps(metrics),
+        })
         return context
+    
 
 # Campaigns
 
@@ -131,6 +134,12 @@ class CampaignDetailView(LoginRequiredMixin, DetailView):
     model = Campaign
     template_name = 'core/campaign_detail.html'
     context_object_name = 'campaign'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Add a flag indicating if any 'sent' events exist
+        context['has_sent_events'] = self.object.events.filter(event_type='sent').exists()
+        return context
 
 def get_campaign_group_details(request, group_id):
     group = get_object_or_404(CampaignGroup, id=group_id)
@@ -715,65 +724,356 @@ class WebhookDeleteView(LoginRequiredMixin, DeleteView):
             })
         return super().delete(request, *args, **kwargs)
     
+
+# Submitter Group Views
+class SubmitterGroupListView(LoginRequiredMixin, ListView):
+    model = SubmitterGroup
+    template_name = 'core/submitter_clicker/submitter_group_list.html'
+    context_object_name = 'submitter_groups'
+
+class SubmitterGroupCreateView(LoginRequiredMixin, CreateView):
+    model = SubmitterGroup
+    fields = ['name']  # Only name is required; members can be added later via campaign events
+    template_name = 'core/submitter_clicker/submitter_group_form.html'
+    success_url = reverse_lazy('core:submitter_groups')
+
+class SubmitterGroupUpdateView(LoginRequiredMixin, UpdateView):
+    model = SubmitterGroup
+    fields = ['name']
+    template_name = 'core/submitter_clicker/submitter_group_form.html'
+    success_url = reverse_lazy('core:submitter_groups')
+
+class SubmitterGroupDeleteView(LoginRequiredMixin, DeleteView):
+    model = SubmitterGroup
+    success_url = reverse_lazy('core:submitter_groups')
+
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        self.object.delete()
+        return redirect(self.get_success_url())
+
+class SubmitterGroupDetailView(LoginRequiredMixin, DetailView):
+    model = SubmitterGroup
+    template_name = 'core/submitter_clicker/submitter_group_detail.html'
+    context_object_name = 'group'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        group = self.object
+        members = group.members.all()
+        activities = CampaignEvent.objects.filter(user__in=members).order_by('-timestamp')
+        context['members'] = members
+        context['activities'] = activities
+        return context
+
+# Clicker Group Views
+class ClickerGroupListView(LoginRequiredMixin, ListView):
+    model = ClickerGroup
+    template_name = 'core/submitter_clicker/clicker_group_list.html'
+    context_object_name = 'clicker_groups'
+
+class ClickerGroupCreateView(LoginRequiredMixin, CreateView):
+    model = ClickerGroup
+    fields = ['name']
+    template_name = 'core/submitter_clicker/clicker_group_form.html'
+    success_url = reverse_lazy('core:clicker_groups')
+
+class ClickerGroupUpdateView(LoginRequiredMixin, UpdateView):
+    model = ClickerGroup
+    fields = ['name']
+    template_name = 'core/submitter_clicker/clicker_group_form.html'
+    success_url = reverse_lazy('core:clicker_groups')
+
+class ClickerGroupDeleteView(LoginRequiredMixin, DeleteView):
+    model = ClickerGroup
+    success_url = reverse_lazy('core:clicker_groups')
+
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        self.object.delete()
+        return redirect(self.get_success_url())
+
+class ClickerGroupDetailView(LoginRequiredMixin, DetailView):
+    model = ClickerGroup
+    template_name = 'core/submitter_clicker/clicker_group_detail.html'
+    context_object_name = 'group'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        group = self.object
+        members = group.members.all()
+        activities = CampaignEvent.objects.filter(user__in=members).order_by('-timestamp')
+        context['members'] = members
+        context['activities'] = activities
+        return context
+
+# User Report View (shared for both group types)
+def user_report(request, user_id):
+    user = get_object_or_404(ExternalUser, id=user_id)
+    activities = CampaignEvent.objects.filter(user=user).order_by('-timestamp')
+    
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="{user.email}_report.csv"'
+    
+    writer = csv.writer(response)
+    writer.writerow(['Timestamp', 'Event Type', 'Campaign', 'Details'])
+    for activity in activities:
+        writer.writerow([activity.timestamp, activity.event_type, activity.campaign.name, activity.details])
+    
+    return response
+
+def campaign_reports(request):
+    # Example: Generate CSV per campaign
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="campaign_reports.csv"'
+    writer = csv.writer(response)
+    writer.writerow(['Campaign', 'User', 'Event Type', 'Timestamp'])
+    events = CampaignEvent.objects.all()
+    for event in events:
+        writer.writerow([event.campaign.name, event.user.email, event.event_type, event.timestamp])
+    return response
+
+class ReportsView(LoginRequiredMixin, ListView):
+    model = Campaign
+    template_name = 'core/reports.html'
+    context_object_name = 'campaigns'
+
+class CampaignReportView(LoginRequiredMixin, View):
+    def get(self, request, pk):
+        campaign = get_object_or_404(Campaign, pk=pk)
+        events = CampaignEvent.objects.filter(campaign=campaign).order_by('-timestamp')
+        
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = f'attachment; filename="{campaign.name}_report.csv"'
+        
+        writer = csv.writer(response)
+        writer.writerow(['User', 'Event Type', 'Timestamp', 'Details'])
+        for event in events:
+            writer.writerow([event.user.email, event.event_type, event.timestamp, event.details])
+        
+        return response
+    
+
+
 # Tracking
+from django.core.mail import EmailMessage
+from django.core.mail.backends.smtp import EmailBackend
+from django.template import Template, Context
+from django.core.signing import Signer, BadSignature
+from django.contrib.staticfiles import finders
+from django.middleware.csrf import get_token
+from django.http import HttpResponse, HttpResponseRedirect
+from django.shortcuts import redirect
+import logging
+import random
+import string
+import sendgrid
+from sendgrid.helpers.mail import Mail
+from .models import Campaign, ExternalUser, CampaignEvent
 
-def track_open(request, token):
-    signer = Signer()
+logger = logging.getLogger(__name__)
+signer = Signer()
+
+def view_image(request, token):
+    """Log email views via the footer image (or optional hidden image)."""
     try:
-        campaign_id, recipient_id = map(int, signer.unsign(token).split(':'))
-        campaign = Campaign.objects.get(id=campaign_id)
-        recipient = ExternalUser.objects.get(id=recipient_id)
-        CampaignEvent.objects.create(
-            campaign=campaign,
-            user=recipient,
-            event_type='opened',
-        )
-        pixel = b'\x47\x49\x46\x38\x39\x61\x01\x00\x01\x00\x80\x00\x00\x00\x00\x00\xff\xff\xff\x21\xf9\x04\x01\x00\x00\x00\x00\x2c\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02\x02\x44\x01\x00\x3b'
-        return HttpResponse(pixel, content_type='image/gif')
-    except (BadSignature, ValueError, Campaign.DoesNotExist, ExternalUser.DoesNotExist):
-        return HttpResponse(status=404)
+        ip_address = request.META.get('REMOTE_ADDR')
+        user_agent = request.META.get('HTTP_USER_AGENT')
+        logger.debug(f"View image token: {token}, IP: {ip_address}, UA: {user_agent}")
 
-def track_click(request, token):
-    signer = Signer()
-    try:
-        campaign_id, recipient_id = map(int, signer.unsign(token).split(':'))
-        campaign = Campaign.objects.get(id=campaign_id)
-        recipient = ExternalUser.objects.get(id=recipient_id)
-        CampaignEvent.objects.create(
-            campaign=campaign,
-            user=recipient,
-            event_type='clicked',
-        )
-        return redirect(f"/landing/{token}/")
-    except (BadSignature, ValueError, Campaign.DoesNotExist, ExternalUser.DoesNotExist):
-        return HttpResponse(status=404)
+        unsigned_value = signer.unsign(token)
+        campaign_id, recipient_id, _ = unsigned_value.split(':', 2)
+        campaign = Campaign.objects.get(id=int(campaign_id))
+        recipient = ExternalUser.objects.get(id=int(recipient_id))
 
-def landing_page_view(request, token):
-    signer = Signer()
-    try:
-        campaign_id, recipient_id = map(int, signer.unsign(token).split(':'))
-        campaign = Campaign.objects.get(id=campaign_id)
-        recipient = ExternalUser.objects.get(id=recipient_id)
-        landing_page = campaign.landing_page
-
-        if request.method == 'POST' and landing_page.capture_submitted_data:
-            form_data = request.POST.dict()
+        if not CampaignEvent.objects.filter(campaign=campaign, user=recipient, event_type='opened').exists():
             CampaignEvent.objects.create(
                 campaign=campaign,
                 user=recipient,
-                event_type='submitted',
-                details=form_data,
+                event_type='opened',
+                ip_address=ip_address,
+                user_agent=user_agent,
             )
-            return HttpResponse("Thank you for your submission!", content_type="text/plain")
+            logger.debug(f"View event recorded: campaign {campaign_id}, recipient {recipient_id}")
 
-        return HttpResponse(landing_page.html_content, content_type="text/html")
-    except (BadSignature, ValueError, Campaign.DoesNotExist, ExternalUser.DoesNotExist):
+        image_path = finders.find('images/click_here.png')  # Add this to static/images/
+        if not image_path:
+            image_path = finders.find('images/transparent.png')  # Fallback
+        if image_path:
+            with open(image_path, 'rb') as f:
+                return HttpResponse(f.read(), content_type='image/png')
         return HttpResponse(status=404)
 
+    except (BadSignature, ValueError, Campaign.DoesNotExist, ExternalUser.DoesNotExist) as e:
+        logger.error(f"View image failed: {str(e)}")
+        return HttpResponse(status=404)
 
+def visit_link(request, token):
+    """Log clicks on the main phishing link and redirect to landing page."""
+    try:
+        ip_address = request.META.get('REMOTE_ADDR')
+        user_agent = request.META.get('HTTP_USER_AGENT')
+        logger.debug(f"Visit link token: {token}, IP: {ip_address}, UA: {user_agent}")
 
+        unsigned_value = signer.unsign(token)
+        campaign_id, recipient_id, _ = unsigned_value.split(':', 2)
+        campaign = Campaign.objects.get(id=int(campaign_id))
+        recipient = ExternalUser.objects.get(id=int(recipient_id))
 
+        if not CampaignEvent.objects.filter(campaign=campaign, user=recipient, event_type='clicked').exists():
+            CampaignEvent.objects.create(
+                campaign=campaign,
+                user=recipient,
+                event_type='clicked',
+                ip_address=ip_address,
+                user_agent=user_agent,
+            )
+            for group in campaign.clicker_groups.all():
+                group.members.add(recipient)
+        return redirect(f"/page/{token}/")
 
+    except (BadSignature, ValueError, Campaign.DoesNotExist, ExternalUser.DoesNotExist) as e:
+        logger.error(f"Visit link failed: {str(e)}")
+        return HttpResponse(status=404)
 
+def page_view(request, token):
+    """Render the landing page."""
+    try:
+        unsigned_value = signer.unsign(token)
+        campaign_id, recipient_id, _ = unsigned_value.split(':', 2)
+        campaign = Campaign.objects.get(id=int(campaign_id))
+        recipient = ExternalUser.objects.get(id=int(recipient_id))
+        landing_page = campaign.landing_pages.first()
+        if not landing_page:
+            raise ValueError("No landing pages associated with this campaign.")
+        if request.method == 'POST' and landing_page.capture_submitted_data:
+            if not CampaignEvent.objects.filter(campaign=campaign, user=recipient, event_type='submitted').exists():
+                form_data = request.POST.dict()
+                CampaignEvent.objects.create(
+                    campaign=campaign,
+                    user=recipient,
+                    event_type='submitted',
+                    details=form_data,
+                    ip_address=request.META.get('REMOTE_ADDR'),
+                    user_agent=request.META.get('HTTP_USER_AGENT'),
+                )
+                for group in campaign.submitter_groups.all():
+                    group.members.add(recipient)
+            return redirect("https://www.youtube.com/watch?v=dQw4w9WgXcQ")
+        template = Template(landing_page.html_content)
+        context = Context({
+            'csrf_token': get_token(request),
+            'request': request,
+            'first_name': recipient.first_name,
+            'last_name': recipient.last_name,
+            'email': recipient.email,
+        })
+        rendered_content = template.render(context)
+        return HttpResponse(rendered_content, content_type="text/html")
+    except (BadSignature, ValueError, Campaign.DoesNotExist, ExternalUser.DoesNotExist) as e:
+        logger.error(f"Page view failed: {str(e)}")
+        return HttpResponse(status=404)
+
+def send_phishing_email(campaign, recipient, email_template, landing_page, token, sending_profile):
+    """Send a phishing email with a spoofed footer link to the landing page."""
+    context = {
+        'visit_url': f"{settings.BASE_URL}/visit/link/{token}/",  # Main phishing link
+        'info_image_url': f"{settings.BASE_URL}/images/view/{token}.png",  # Optional hidden image
+        'page_url': f"{settings.BASE_URL}/page/{token}/",  # Footer link to landing page
+        'footer_image_url': f"{settings.BASE_URL}/images/view/{token}.png",  # Footer image for opens
+        'first_name': recipient.first_name,
+        'last_name': recipient.last_name,
+        'email': recipient.email,
+        'subject': email_template.subject,
+        'add_tracking_image': email_template.add_tracking_image,  # Matches your model
+    }
+    template = Template(email_template.html_content)
+    rendered_html = template.render(Context(context))
+
+    try:
+        if sending_profile.interface_type == 'smtp':
+            backend = EmailBackend(
+                host=sending_profile.host,
+                port=sending_profile.port,
+                username=sending_profile.username,
+                password=sending_profile.password,
+                use_tls=True,
+                fail_silently=False,
+            )
+            email = EmailMessage(
+                subject=email_template.subject,
+                body=rendered_html,
+                from_email=sending_profile.smtp_from,
+                to=[recipient.email],
+                connection=backend,
+            )
+            email.content_subtype = "html"
+            email.send()
+        elif sending_profile.interface_type == 'api':
+            if sending_profile.api_provider == 'sendgrid':
+                sg = sendgrid.SendGridAPIClient(sending_profile.api_key)
+                message = Mail(
+                    from_email=sending_profile.smtp_from,
+                    to_emails=recipient.email,
+                    subject=email_template.subject,
+                    html_content=rendered_html
+                )
+                response = sg.send(message)
+                if response.status_code != 202:
+                    raise Exception(f"SendGrid API failed with status {response.status_code}")
+            else:
+                raise Exception(f"Unsupported API provider: {sending_profile.api_provider}")
+
+        CampaignEvent.objects.create(
+            campaign=campaign,
+            user=recipient,
+            event_type='sent',
+            email_template=email_template,
+            landing_page=landing_page,
+        )
+    except Exception as e:
+        logger.error(f"Error sending email to {recipient.email}: {e}")
+
+def send_campaign_emails(campaign):
+    """Send emails to all recipients of a campaign."""
+    if campaign.send_to_all_users:
+        recipients = ExternalUser.objects.all()
+    else:
+        recipients = ExternalUser.objects.filter(groups__in=campaign.groups.all()).distinct()
+    
+    email_templates = campaign.email_templates.all()
+    landing_pages = campaign.landing_pages.all()
+    
+    if not email_templates or not landing_pages:
+        raise ValueError("Campaign must have at least one email template and one landing page.")
+    
+    signer = Signer()
+    for recipient in recipients:
+        email_template = random.choice(email_templates)
+        landing_page = random.choice(landing_pages)
+        random_length = random.randint(5, 20)
+        random_string = ''.join(random.choices(string.ascii_letters + string.digits, k=random_length))
+        token_value = f"{campaign.id}:{recipient.id}:{random_string}"
+        token = signer.sign(token_value)
+        
+        send_phishing_email(campaign, recipient, email_template, landing_page, token, campaign.sending_profile)
+
+def start_campaign(request, pk):
+    """Start a campaign if conditions are met."""
+    campaign = get_object_or_404(Campaign, pk=pk)
+    if request.method == 'POST' and campaign.status == 'active' and not campaign.events.filter(event_type='sent').exists():
+        send_campaign_emails(campaign)
+        messages.success(request, "Campaign started successfully!")
+    return redirect('core:campaign_detail', pk=pk)
+        
+
+def test(request):
+    # print(request.body)
+    # print(request.headers)
+
+    for key in request.headers.keys():
+        print(key," : ",request.headers[key])
+
+    return JsonResponse({"success":1})
 
 

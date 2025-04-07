@@ -4,8 +4,12 @@
 <div class="container">
     <h1>Campaigns</h1>
 
-    <a href="{% url 'core:campaign_create' %}" class="btn btn-success mb-3" data-bs-toggle="tooltip" title="Create a new phishing campaign">+ New Campaign</a>
-
+    <a href="{% url 'core:campaign_create' %}" class="btn btn-success mb-3" data-bs-toggle="tooltip" title="Create a new phishing campaign">+ New Campaign</a> 
+    <p>Total Campaigns: {{ campaigns|length }}</p>
+    <p>Active Campaigns: {{ active_campaigns|length}}</p>
+    <p>Archived Campaigns: {{archived_campaigns|length}}</p>
+    
+    
     <!-- Active Campaigns -->
     {% if active_campaigns %}
         <h2>Active Campaigns</h2>

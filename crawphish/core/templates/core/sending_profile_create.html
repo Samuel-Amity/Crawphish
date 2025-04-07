@@ -2,10 +2,33 @@
 {% block title %}Create Sending Profile{% endblock %}
 {% block content %}
     <h1>Create Sending Profile</h1>
-    <form method="post">
+    <form method="post" id="sendingProfileForm">
         {% csrf_token %}
         {{ form.as_p }}
         <button type="submit" class="btn btn-primary">Save</button>
         <a href="{% url 'core:sending_profiles' %}" class="btn btn-secondary">Cancel</a>
     </form>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const interfaceType = document.getElementById('id_interface_type');
+            const smtpFields = ['host', 'port', 'username', 'password', 'ignore_cert_errors'];
+            const apiFields = ['api_key', 'api_provider'];
+
+            function toggleFields() {
+                const value = interfaceType.value;
+                smtpFields.forEach(field => {
+                    const div = document.getElementById(`div_id_${field}`);
+                    div.style.display = value === 'smtp' ? 'block' : 'none';
+                });
+                apiFields.forEach(field => {
+                    const div = document.getElementById(`div_id_${field}`);
+                    div.style.display = value === 'api' ? 'block' : 'none';
+                });
+            }
+
+            interfaceType.addEventListener('change', toggleFields);
+            toggleFields(); // Initial call
+        });
+    </script>
 {% endblock %}

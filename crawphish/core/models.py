@@ -96,15 +96,28 @@ class LandingPage(models.Model):
         return self.name
 
 class SendingProfile(models.Model):
-    name = models.CharField(max_length=100, help_text="A unique name for this sending profile.")
-    interface_type = models.CharField(max_length=50, help_text="The type of email interface (e.g., SMTP, API).")
-    smtp_from = models.CharField(max_length=255, help_text="The email address that will appear in the 'From' field.")
-    host = models.CharField(max_length=255, help_text="The SMTP server host.")
-    port = models.IntegerField(default=587, help_text="The SMTP server port (default is 587 for TLS).")
-    username = models.CharField(max_length=255, help_text="Username for SMTP authentication.")
-    password = models.CharField(max_length=255, help_text="Password for SMTP authentication.")
-    ignore_cert_errors = models.BooleanField(default=False, help_text="Ignore certificate errors when connecting to the SMTP server.")
-    email_headers = models.JSONField(default=dict, help_text="Additional email headers in JSON format.")
+    INTERFACE_TYPES = (
+        ('smtp', 'SMTP'),
+        ('api', 'API'),
+    )
+    API_PROVIDERS = (
+        ('sendgrid', 'SendGrid'),
+        # Add more providers like ('mailgun', 'Mailgun') as needed
+    )
+    name = models.CharField(max_length=100, help_text="Unique name for this profile.")
+    interface_type = models.CharField(max_length=50, choices=INTERFACE_TYPES, help_text="SMTP or API.")
+    smtp_from = models.CharField(max_length=255, help_text="From email address.")
+    # SMTP fields
+    host = models.CharField(max_length=255, blank=True, null=True, help_text="SMTP server host.")
+    port = models.IntegerField(blank=True, null=True, help_text="SMTP server port.")
+    username = models.CharField(max_length=255, blank=True, null=True, help_text="SMTP username.")
+    password = models.CharField(max_length=255, blank=True, null=True, help_text="SMTP password.")
+    # API fields
+    api_key = models.CharField(max_length=200, blank=True, null=True, help_text="API key for API sending.")
+    api_provider = models.CharField(max_length=50, choices=API_PROVIDERS, blank=True, null=True, help_text="API provider (e.g., SendGrid).")
+    ignore_cert_errors = models.BooleanField(default=False, help_text="Ignore SMTP cert errors.")
+    email_headers = models.JSONField(default=dict, help_text="Additional email headers.")
+    is_default = models.BooleanField(default=False, help_text="Mark as a default profile.")
     modified_date = models.DateTimeField(auto_now=True)
 
     def __str__(self):
@@ -216,6 +229,8 @@ class CampaignEvent(models.Model):
     campaign = models.ForeignKey(Campaign, on_delete=models.CASCADE, related_name='events')
     user = models.ForeignKey('ExternalUser', on_delete=models.CASCADE)
     event_type = models.CharField(max_length=20, choices=EVENT_TYPES)
+    email_template = models.ForeignKey('EmailTemplate', on_delete=models.SET_NULL, null=True, blank=True)
+    landing_page = models.ForeignKey('LandingPage', on_delete=models.SET_NULL, null=True, blank=True)
     timestamp = models.DateTimeField(auto_now_add=True)
     details = models.JSONField(default=dict, blank=True)
 
@@ -223,6 +238,7 @@ class CampaignEvent(models.Model):
         return f"{self.event_type} - {self.campaign.name} - {self.user.email}"
 
 class Webhook(models.Model):
+
     name = models.CharField(max_length=100)
     url = models.URLField()
     events = models.JSONField(default=list)
@@ -232,3 +248,10 @@ class Webhook(models.Model):
 
     def __str__(self):
         return self.name
+    
+
+
+
+# class sattu(models.Model):
+
+#     pass

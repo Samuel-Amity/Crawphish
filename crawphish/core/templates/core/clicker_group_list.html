@@ -1,0 +1,16 @@
+<h1>Clicker Groups</h1>
+<a href="{% url 'core:clicker_group_create' %}">Create New</a>
+<ul>
+{% for group in clicker_groups %}
+    <li>
+        {{ group.name }} ({{ group.members.count }} members)
+        <a href="{% url 'core:clicker_group_edit' group.pk %}">Edit</a>
+        <form action="{% url 'core:clicker_group_delete' group.pk %}" method="post" class="d-inline">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger btn-sm" title="Delete" onclick="return confirm('Delete {{ group.name }}?')">
+                <i class="bi bi-trash"></i>
+            </button>
+        </form>
+    </li>
+{% endfor %}
+</ul>

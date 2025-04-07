@@ -1,0 +1,46 @@
+{% extends 'core/base.html' %}
+{% block title %}{{ group.name }}{% endblock %}
+{% block content %}
+<div class="container">
+    <h1>{{ group.name }}</h1>
+    <h2>Members</h2>
+    <ul>
+        {% for member in members %}
+            <li>
+                <a href="{% url 'core:user_report' member.id %}">{{ member.first_name }} {{ member.last_name }} ({{ member.email }})</a>
+            </li>
+        {% empty %}
+            <li>No members yet.</li>
+        {% endfor %}
+    </ul>
+    <h2>Activities</h2>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>User</th>
+                <th>Event Type</th>
+                <th>Timestamp</th>
+                <th>Details</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for activity in activities %}
+            {% if activity.event_type == 'clicked' %}
+                <tr>
+                    <td>{{ activity.user.email }}</td>
+                    <td>{{ activity.event_type }}</td>
+                    <td>{{ activity.timestamp }}</td>
+                    <td>{{ activity.details }}</td>
+                </tr>
+            {% endif %}
+            {% empty %}
+                <tr>
+                    <td colspan="4">No activities yet.</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <a href="{% url 'core:submitter_group_edit' group.pk %}" class="btn btn-warning">Edit Name</a>
+    <a href="{% url 'core:submitter_groups' %}" class="btn btn-secondary">Back to List</a>
+</div>
+{% endblock %}

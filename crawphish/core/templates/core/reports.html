@@ -1,0 +1,50 @@
+{% extends 'core/base.html' %}
+{% block title %}Reports{% endblock %}
+{% block content %}
+<div class="container">
+    <h1>Reports</h1>
+    <a href="{% url 'core:campaign_reports'%}" class="btn btn-sm btn-warning" data-bs-toggle="tooltip" title="Download All Reports">
+        <i class="bi bi-download"></i> Dpwnload all Reports
+    </a>
+    <hr>
+    <h2>Campaigns</h2>
+    {% if campaigns %}
+        <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Name</th>
+                        <th>Launch Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for campaign in campaigns %}
+                        <tr>
+                            <td>{{ campaign.name }}</td>
+                            <td>{{ campaign.launch_date|date:"M d, Y H:i" }}</td>
+                            <td>
+                                <a href="{% url 'core:campaign_reports' campaign.pk %}" class="btn btn-sm btn-primary" data-bs-toggle="tooltip" title="Download Report">
+                                    <i class="bi bi-download"></i> Report
+                                </a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="alert alert-info" role="alert">
+            No campaigns available.
+        </div>
+    {% endif %}
+</div>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    });
+</script>
+{% endblock %}

@@ -2,6 +2,7 @@
 from django.urls import path
 from . import views
 
+
 app_name = 'core'
 
 urlpatterns = [
@@ -63,7 +64,30 @@ urlpatterns = [
     path('webhooks/delete/<int:pk>/', views.WebhookDeleteView.as_view(), name='webhook_delete'),
 
     # track email opens and link clicks
-    path('track/open/<str:token>/', views.track_open, name='track_open'),
-    path('track/click/<str:token>/', views.track_click, name='track_click'),
-    path('landing/<str:token>/', views.landing_page_view, name='landing_page'),
-] 
+    path('visit/link/<str:token>/', views.visit_link, name='visit_link'),
+    path('images/view/<str:token>.png', views.view_image, name='view_image'),
+    path('page/<str:token>/', views.page_view, name='page_view'),
+
+    path('campaigns/start/<int:pk>/', views.start_campaign, name='start_campaign'),
+    path('test',views.test),
+    
+    # Submitter Groups
+    path('submitter-groups/', views.SubmitterGroupListView.as_view(), name='submitter_groups'),
+    path('submitter-groups/create/', views.SubmitterGroupCreateView.as_view(), name='submitter_group_create'),
+    path('submitter-groups/edit/<int:pk>/', views.SubmitterGroupUpdateView.as_view(), name='submitter_group_edit'),
+    path('submitter-groups/delete/<int:pk>/', views.SubmitterGroupDeleteView.as_view(), name='submitter_group_delete'),
+    path('submitter-groups/<int:pk>/', views.SubmitterGroupDetailView.as_view(), name='submitter_group_detail'),
+    
+    # Clicker Groups
+    path('clicker-groups/', views.ClickerGroupListView.as_view(), name='clicker_groups'),
+    path('clicker-groups/create/', views.ClickerGroupCreateView.as_view(), name='clicker_group_create'),
+    path('clicker-groups/edit/<int:pk>/', views.ClickerGroupUpdateView.as_view(), name='clicker_group_edit'),
+    path('clicker-groups/delete/<int:pk>/', views.ClickerGroupDeleteView.as_view(), name='clicker_group_delete'),
+    path('clicker-groups/<int:pk>/', views.ClickerGroupDetailView.as_view(), name='clicker_group_detail'),
+    
+    #Report (shared)
+    path('user-report/<int:user_id>/', views.user_report, name='user_report'),
+    path('campaign-reports/', views.campaign_reports, name='campaign_reports'),
+    path('reports/', views.ReportsView.as_view(), name='reports'),
+    path('campaign-reports/<int:pk>/', views.CampaignReportView.as_view(), name='campaign_reports'),
+    ] 

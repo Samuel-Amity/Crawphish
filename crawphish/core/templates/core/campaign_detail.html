@@ -80,6 +80,12 @@
     </div>
 
     <div class="d-flex gap-2">
+        {% if campaign.status == 'active' and not has_sent_events %}
+        <form method="post" action="{% url 'core:start_campaign' campaign.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-primary">Start Campaign</button>
+        </form>
+        {% endif %}
         <a href="{% url 'core:campaign_edit' campaign.pk %}" class="btn btn-primary">Edit Campaign</a>
         <a href="{% url 'core:campaigns' %}" class="btn btn-secondary">Back to Campaigns</a>
     </div>

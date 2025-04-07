@@ -25,7 +25,6 @@ SECRET_KEY = 'django-insecure-u8hf)_8f=5*mbytihrgw=+c+8q@_v2dov+qx@v9se=^b01(tm6
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
 
 
 # Application definition
@@ -132,3 +131,17 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
 STATIC_ROOT = os.path.join(PROJECT_DIR, 'static')
+
+# Local Development settings
+BASE_URL = "http://localhost:8000"
+ALLOWED_HOSTS = []
+
+# # private ip development settings
+# ALLOWED_HOSTS = ['192.168.68.25', '127.0.0.1']
+# BASE_URL = "http://192.168.68.25:8081"
+
+STATIC_URL = 'static/'
+STATICFILES_DIRS = [
+    BASE_DIR / "core" / "static",
+]
+STATIC_ROOT = BASE_DIR / "static"
